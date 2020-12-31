@@ -345,7 +345,7 @@ function addTexture(gltf: glTF, texture: Texture): number {
     return addedIndex;
 }
 
-function addImage(gltf: glTF, image: HTMLImageElement | HTMLCanvasElement): number {
+function addImage(gltf: glTF, image: HTMLImageElement | HTMLCanvasElement | { uri: string }): number {
     if (!gltf.images)
         gltf.images = [];
 
@@ -353,32 +353,39 @@ function addImage(gltf: glTF, image: HTMLImageElement | HTMLCanvasElement): numb
         if (image === gltf.images[i].extras) {
             return i; // Already had an identical image.
         }
+        if ("uri" in image && image.uri === gltf.images[i].uri) {
+            return i; // already there.
+        }
     }
 
     const gltfImage: glTFImage = {
         extras: image as any, // For duplicate detection
     };
-    switch (gltf.extras.options.imageOutputType) {
-        case ImageOutputType.GLB:
-            const bufferView = gltf.extras.binChunkBuffer!.addBufferView(ComponentType.UNSIGNED_BYTE, DataType.SCALAR);
-            bufferView.writeAsync(imageToArrayBuffer(image)).then(() => {
-                bufferView.finalize();
-            });
-            gltfImage.bufferView = bufferView.getIndex();
-            gltfImage.mimeType = "image/png";
-            break;
-
-        case ImageOutputType.DataURI:
-            gltfImage.uri = imageToDataURI(image);
-            break;
-
-        default: // ImageOutputType.External
-            gltf.extras.promises.push(imageToArrayBuffer(image).then((pngBuffer: ArrayBuffer) => {
-                gltfImage.uri = (pngBuffer as any); // Processed later
-            }));
-            break;
+    if ("uri" in image) {
+        gltfImage.uri = image.uri; // simply passed-through.
     }
+    else {
+        switch (gltf.extras.options.imageOutputType) {
+            case ImageOutputType.GLB:
+                const bufferView = gltf.extras.binChunkBuffer!.addBufferView(ComponentType.UNSIGNED_BYTE, DataType.SCALAR);
+                bufferView.writeAsync(imageToArrayBuffer(image)).then(() => {
+                    bufferView.finalize();
+                });
+                gltfImage.bufferView = bufferView.getIndex();
+                gltfImage.mimeType = "image/png";
+                break;
 
+            case ImageOutputType.DataURI:
+                gltfImage.uri = imageToDataURI(image);
+                break;
+
+            default: // ImageOutputType.External
+                gltf.extras.promises.push(imageToArrayBuffer(image).then((pngBuffer: ArrayBuffer) => {
+                    gltfImage.uri = (pngBuffer as any); // Processed later
+                }));
+                break;
+        }
+    }
     const addedIndex = gltf.images.length;
     gltf.images.push(gltfImage);
 
