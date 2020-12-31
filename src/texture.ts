@@ -5,6 +5,8 @@ type TextureImageType = HTMLImageElement | HTMLCanvasElement | { uri: string };
 export class Texture {
     public wrapS: WrappingMode = WrappingMode.CLAMP_TO_EDGE;
     public wrapT: WrappingMode = WrappingMode.CLAMP_TO_EDGE;
+    public magFilter?: number;
+    public minFilter?: number;
     private __image!: TextureImageType;
     public set image(val: TextureImageType) {
         if (!val) {

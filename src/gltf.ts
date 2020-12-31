@@ -399,6 +399,8 @@ function addSampler(gltf: glTF, texture: Texture): number {
     const gltfSampler = {
         wrapS: texture.wrapS,
         wrapT: texture.wrapT,
+        minFilter: texture.minFilter,
+        magFilter: texture.magFilter
     };
 
     for (let i = 0; i < gltf.samplers.length; i++) {
